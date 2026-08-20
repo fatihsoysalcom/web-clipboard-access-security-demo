@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Panoya Erişim Güvenliği</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; line-height: 1.6; background-color: #f4f4f4; color: #333; }
+        h1, h2 { color: #0056b3; }
+        div { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        button { padding: 10px 15px; margin-right: 10px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; transition: background-color 0.2s; }
+        button:hover { background-color: #0056b3; }
+        textarea { width: calc(100% - 12px); height: 80px; margin-top: 10px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .console-output { background-color: #e9ecef; border: 1px solid #dee2e6; padding: 10px; min-height: 50px; margin-top: 20px; white-space: pre-wrap; font-family: monospace; font-size: 13px; border-radius: 4px; }
+        .console-output p { margin: 5px 0; padding: 0; }
+        .error { color: #dc3545; font-weight: bold; }
+        .success { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Web Güvenliğinde Panoya Erişim</h1>
+    <p>Bu örnek, modern web tarayıcılarında panoya (clipboard) erişim mekanizmalarını ve güvenlik kısıtlamalarını göstermektedir.</p>
+    <p>Doğrudan (kullanıcı etkileşimi olmadan) panoya erişim genellikle güvenlik nedeniyle engellenir. Kullanıcı etkileşimi (bir düğmeye tıklama gibi) ile erişim ise izin gerektirir ve genellikle başarılı olur.</p>
+
+    <div>
+        <h2>Panoya Yazma (Copy)</h2>
+        <label for="textToCopy">Kopyalanacak Metin:</label><br>
+        <textarea id="textToCopy">Bu metni panoya kopyalamak için butona tıklayın.</textarea><br>
+        <button id="copyButton">Panoya Kopyala (Kullanıcı Etkileşimi)</button>
+        <button id="attemptDirectCopy">Doğrudan Kopyalamayı Dene (Başarısız Olmalı)</button>
+    </div>
+
+    <div>
+        <h2>Panodan Okuma (Paste)</h2>
+        <label for="pastedText">Panodan Yapıştırılan Metin:</label><br>
+        <textarea id="pastedText" readonly></textarea><br>
+        <button id="pasteButton">Panodan Yapıştır (Kullanıcı Etkileşimi)</button>
+        <button id="attemptDirectPaste">Doğrudan Yapıştırmayı Dene (Başarısız Olmalı)</button>
+    </div>
+
+    <h2>Konsol Çıktısı</h2>
+    <div id="consoleOutput" class="console-output"></div>
+
+    <script>
+        const textToCopyElem = document.getElementById('textToCopy');
+        const pastedTextElem = document.getElementById('pastedText');
+        const copyButton = document.getElementById('copyButton');
+        const pasteButton = document.getElementById('pasteButton');
+        const attemptDirectCopyButton = document.getElementById('attemptDirectCopy');
+        const attemptDirectPasteButton = document.getElementById('attemptDirectPaste');
+        const consoleOutput = document.getElementById('consoleOutput');
+
+        function logToConsole(message, type = 'info') {
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            if (type === 'error') {
+                p.classList.add('error');
+            } else if (type === 'success') {
+                p.classList.add('success');
+            }
+            consoleOutput.prepend(p); // En yeni mesajı en üste ekle
+            console.log(message);
+        }
+
+        // --- Panoya Yazma (Copy) ---
+
+        // Kullanıcı etkileşimi ile panoya yazma
+        copyButton.addEventListener('click', async () => {
+            const text = textToCopyElem.value;
+            try {
+                // Modern tarayıcılarda navigator.clipboard.writeText() kullanıcı etkileşimi ile çalışır.
+                // Bu, makalede bahsedilen güvenli kullanım yöntemidir.
+                await navigator.clipboard.writeText(text);
+                logToConsole(`Başarılı: Panoya kopyalandı: "${text.substring(0, 30)}..."`, 'success');
+            } catch (err) {
+                // Kullanıcı izni reddederse veya güvenlik politikaları engellerse hata oluşur.
+                logToConsole(`Hata: Panoya kopyalanamadı. Sebep: ${err.message}`, 'error');
+                console.error('Copy error:', err);
+            }
+        });
+
+        // Doğrudan (kullanıcı etkileşimi olmadan) panoya yazmayı deneme
+        // Bu genellikle güvenlik nedeniyle engellenir.
+        attemptDirectCopyButton.addEventListener('click', async () => {
+            logToConsole('Deneme: Doğrudan panoya yazma (kullanıcı etkileşimi olmadan)...');
+            try {
+                // Bu çağrı, bir kullanıcı etkileşimi olay işleyicisi içinde olsa bile, 
+                // tarayıcılar bu tür işlemleri kısıtlayabilir veya izin isteyebilir.
+                await navigator.clipboard.writeText("Bu metin doğrudan kopyalanmaya çalışıldı!");
+                logToConsole('Uyarı: Doğrudan kopyalama beklenmedik şekilde başarılı oldu. Tarayıcı davranışına dikkat edin.', 'info');
+            } catch (err) {
+                // Beklenen davranış: Güvenlik hatası veya izin reddi.
+                logToConsole(`Beklenen Hata: Doğrudan panoya kopyalanamadı. Sebep: ${err.message} (Güvenlik kısıtlaması)`, 'error');
+                console.error('Direct copy error:', err);
+            }
+        });
+
+
+        // --- Panodan Okuma (Paste) ---
+
+        // Kullanıcı etkileşimi ile panodan okuma
+        pasteButton.addEventListener('click', async () => {
+            try {
+                // Modern tarayıcılarda navigator.clipboard.readText() kullanıcı etkileşimi ile çalışır
+                // ve kullanıcıdan izin isteyebilir. Bu, makalede bahsedilen güvenli kullanım yöntemidir.
+                const text = await navigator.clipboard.readText();
+                pastedTextElem.value = text;
+                logToConsole(`Başarılı: Panodan yapıştırıldı: "${text.substring(0, 30)}..."`, 'success');
+            } catch (err) {
+                // Kullanıcı izni reddederse veya güvenlik politikaları engellerse hata oluşur.
+                logToConsole(`Hata: Panodan yapıştırılamadı. Sebep: ${err.message} (İzin gerekli veya reddedildi)`, 'error');
+                console.error('Paste error:', err);
+            }
+        });
+
+        // Doğrudan (kullanıcı etkileşimi olmadan) panodan okumayı deneme
+        // Bu genellikle güvenlik nedeniyle engellenir.
+        attemptDirectPasteButton.addEventListener('click', async () => {
+            logToConsole('Deneme: Doğrudan panodan okuma (kullanıcı etkileşimi olmadan)...');
+            try {
+                // Bu çağrı, bir kullanıcı etkileşimi olay işleyicisi içinde olsa bile,
+                // tarayıcılar bu tür işlemleri kısıtlayabilir veya izin isteyebilir.
+                const text = await navigator.clipboard.readText();
+                logToConsole(`Uyarı: Doğrudan yapıştırma beklenmedik şekilde başarılı oldu: "${text.substring(0, 30)}..."`, 'info');
+                pastedTextElem.value = text;
+            } catch (err) {
+                // Beklenen davranış: Güvenlik hatası veya izin reddi.
+                logToConsole(`Beklenen Hata: Doğrudan panodan okunamadı. Sebep: ${err.message} (Güvenlik kısıtlaması)`, 'error');
+                console.error('Direct paste error:', err);
+            }
+        });
+
+        // Sayfa yüklendiğinde doğrudan okuma/yazma denemesi (kesinlikle başarısız olmalı)
+        // Bu tür bir kod, makalede bahsedilen "neden doğrudan erişemiyoruz" kısmını en iyi gösterir.
+        window.onload = async () => {
+            logToConsole('Sayfa yüklendiğinde doğrudan panodan okuma denemesi (kullanıcı etkileşimi yok)...');
+            try {
+                // Bu çağrı, kullanıcı etkileşimi olmadan yapıldığı için kesinlikle başarısız olmalıdır.
+                // Tarayıcılar, kullanıcı izni veya bir kullanıcı etkinliği olmadan panodan okumayı engeller.
+                await navigator.clipboard.readText();
+                logToConsole('Hata: Sayfa yüklenirken doğrudan okuma beklenmedik şekilde başarılı oldu! Bu bir güvenlik açığı olabilir.', 'error');
+            } catch (err) {
+                logToConsole(`Beklenen Hata: Sayfa yüklenirken panodan okunamadı. Sebep: ${err.message} (Güvenlik kısıtlaması: Kullanıcı etkileşimi yok)`, 'error');
+            }
+
+            logToConsole('Sayfa yüklendiğinde doğrudan panoya yazma denemesi (kullanıcı etkileşimi yok)...');
+            try {
+                // Bu çağrı da kullanıcı etkileşimi olmadan yapıldığı için kesinlikle başarısız olmalıdır.
+                // Tarayıcılar, kullanıcı izni veya bir kullanıcı etkinliği olmadan panoya yazmayı engeller.
+                await navigator.clipboard.writeText("Bu metin sayfa yüklenirken kopyalanmaya çalışıldı.");
+                logToConsole('Hata: Sayfa yüklenirken doğrudan yazma beklenmedik şekilde başarılı oldu! Bu bir güvenlik açığı olabilir.', 'error');
+            } catch (err) {
+                logToConsole(`Beklenen Hata: Sayfa yüklenirken panoya yazılamadı. Sebep: ${err.message} (Güvenlik kısıtlaması: Kullanıcı etkileşimi yok)`, 'error');
+            }
+        };
+
+    </script>
+</body>
+</html>
